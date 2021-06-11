@@ -10,22 +10,24 @@ function data_rcs=shortchannel_regression(cfg, datain);
 %
 %   cfg.method        = string, 'regstat2', 'QR' or 'OLS' (default = 'QR')
 %   cfg.verbose       = boolean, whether text output is desired (default = false)
+%   cfg.nearest       = only use the closest short channel for the
+%   regression (in this case, takes the short channel with the same
+%   receiver as the long channel)
 %
 
 %%
 % get the options
 cfg.method        = ft_getopt(cfg, 'method', 'QR');
 cfg.verbose       = ft_getopt(cfg, 'verbose', false);
+cfg.nearest       = ft_getopt(cfg, 'nearest', false);
 
 % find short and long channel indexes
 SC=find(contains(datain.label, {'a ', 'b ', 'c ', 'd '})); %index of all short channels
 LC=find(~contains(datain.label, {'a ', 'b ', 'c ', 'd '})); %index of all long channels
 
-
 data_rcs			 = datain;
 data_rcs.label = datain.label(LC);
 for tr=1:numel(datain.trial)
-  %data = datain.trial{tr};
   shallow		= datain.trial{tr}(SC,:);
   shallow		= bsxfun(@minus,shallow,mean(shallow,2)); % mean detrend
   shallowlabel = datain.label(SC);
@@ -39,9 +41,19 @@ for tr=1:numel(datain.trial)
   % Reference channel subtraction
   ndeep		= size(deep,1);
   signal		= NaN(size(deep));
-  x			= shallow';
   for dpIdx	= 1:ndeep
     y				= deep(dpIdx,:)';
+    
+    if cfg.nearest
+        % find corresponding short channel
+        deeplabel_split=strsplit(deeplabel{dpIdx}, {'Tx', ' '});
+        idx_SC=find(startsWith(shallowlabel, deeplabel_split{1})) ;       
+        x = shallow(idx_SC,:)';
+    else
+        x			= shallow'; % use all short channels
+        idx_SC=1:length(shallowlabel);
+    end
+    
     switch (cfg.method)
       case 'regstat2'
         b				= regstats2(y,x,'linear',{'beta','r'});
@@ -70,12 +82,11 @@ for tr=1:numel(datain.trial)
     
     % sanity check of results
     if cfg.verbose
-      if fprintf('Found the following meaningful shallow channels for deep channel %s:', deeplabel{dpIdx});
+      fprintf('Found the following meaningful shallow channels for deep channel %s:', deeplabel{dpIdx});
         shIdx = find(beta>0.5);
         for s=1:numel(shIdx)
-          fprintf('\n\t%s', shallowlabel{shIdx(s)})
+          fprintf('\n\t%s', shallowlabel{idx_SC(shIdx(s))})
         end
-      end
       fprintf('\n\n')
     end
   end
