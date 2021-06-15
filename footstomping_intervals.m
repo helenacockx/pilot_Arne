@@ -50,8 +50,8 @@ trials_end=ceil((end_time+2)*data_accel.fsample);
    figure; plot(data_trl.trial{i}(1,:)); title(sprintf('trial %.0d', i))
    % remark: we could also first smooth the data (movmedian) and then find the local
    % maxima
-   peaks=find(islocalmax(data_trl.trial{i}(1,:), 'MaxNumExtrema', 13, 'MinSeparation', 0.3*data_trl.fsample, 'MinProminence', 10));
-   hold on; plot(peaks, 20*ones(1,length(peaks)), 'ro')
+   peaks=find(islocalmax(data_trl.trial{i}(1,:), 'MaxNumExtrema', 13, 'MinSeparation', 0.3*data_trl.fsample, 'MinProminence', 10)); %https://nl.mathworks.com/help/signal/ug/prominence.html
+   hold on; plot(peaks, data_trl.trial{i}(1,peaks), 'ro')
    legend({'vertical acceleration of the right foot', 'detected foot stomps'})
    if length(peaks)>=12
      stomps=peaks(1:12); % only select the first 12
