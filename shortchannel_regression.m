@@ -22,7 +22,7 @@ cfg.verbose       = ft_getopt(cfg, 'verbose', false);
 cfg.nearest       = ft_getopt(cfg, 'nearest', false);
 
 % find short and long channel indexes
-SC=find(contains(datain.label, {'a ', 'b ', 'c ', 'd '})); %index of all short channels
+SC=find(contains(datain.label, {'a ', 'b ', 'c ', 'd '})& all(~isnan(datain.trial{1}(:,:)),2)); %index of all short channels that does not contain nans
 LC=find(~contains(datain.label, {'a ', 'b ', 'c ', 'd '})); %index of all long channels
 
 data_rcs			 = datain;
@@ -35,7 +35,7 @@ for tr=1:numel(datain.trial)
   deep		= datain.trial{tr}(LC,:);
   deep		= bsxfun(@minus,deep,mean(deep,2)); % mean detrend
   deeplabel = datain.label(LC);
-  
+
   time		= datain.time{tr};
   
   % Reference channel subtraction
@@ -43,6 +43,9 @@ for tr=1:numel(datain.trial)
   signal		= NaN(size(deep));
   for dpIdx	= 1:ndeep
     y				= deep(dpIdx,:)';
+    if all(isnan(y))
+      continue
+    end
     
     if cfg.nearest
         % find corresponding short channel
